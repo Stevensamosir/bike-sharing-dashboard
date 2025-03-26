@@ -11,97 +11,74 @@ def load_data():
 
 day_df = load_data()
 
-# Set style
+# Set style biar mirip Matplotlib
 plt.style.use("ggplot")
 
 # Title utama
 st.title("Dashboard Analisis Penyewaan Sepeda")
 
-# 1. Tren Penyewaan Sepeda per Bulan
-st.subheader("Tren Penyewaan Sepeda per Bulan")
+# **1. Tren Penyewaan Sepeda per Hari**
+st.subheader("Tren Penyewaan Sepeda per Hari")
 
-# Agregasi jumlah penyewaan per bulan
-monthly_rentals = day_df.groupby("mnth", as_index=False)["cnt"].sum()
+# Agregasi data per hari
+monthly_rentals = day_df.groupby("dteday", as_index=False)["cnt"].sum()
 
 # Buat figure
 fig1, ax1 = plt.subplots(figsize=(10, 5))
-
-# Visualisasi dengan bar chart (pilih main satu solusi)
-sns.barplot(data=monthly_rentals, x="mnth", y="cnt", hue="mnth", dodge=False, palette="coolwarm")  # Solusi 1
-# sns.barplot(data=monthly_rentals, x="mnth", y="cnt")  # Solusi 2 (tanpa warna)
+sns.scatterplot(x=monthly_rentals['dteday'], y=monthly_rentals['cnt'], color='blue', marker='o', ax=ax1)
 
 # Tambahkan judul dan label
-plt.title("Tren Penyewaan Sepeda per Bulan", fontsize=14, fontweight="bold")
-plt.xlabel("Bulan", fontsize=12)
-plt.ylabel("Jumlah Penyewaan", fontsize=12)
-plt.xticks(range(12), ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"])
+ax1.set_title("Tren Penyewaan Sepeda per Hari", fontsize=14, fontweight="bold")
+ax1.set_xlabel("Tanggal", fontsize=12)
+ax1.set_ylabel("Jumlah Penyewaan", fontsize=12)
+ax1.tick_params(axis='x', rotation=45)
+ax1.grid(True, linestyle="--", alpha=0.7)
 
-# Tambahkan grid horizontal
-plt.grid(axis="y", linestyle="--", alpha=0.7)
-
-# Tampilkan plot
+# Tampilkan plot di Streamlit
 st.pyplot(fig1)
 
-# 2. Pola Penyewaan Sepeda Berdasarkan Waktu dalam Sehari
-st.subheader("Pola Penyewaan Sepeda Berdasarkan Waktu dalam Sehari")
+# **2. Distribusi Penyewaan Sepeda Berdasarkan Jam**
+st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Jam")
 
 # Cek apakah kolom 'hr' ada di dataset
 if 'hr' in day_df.columns:
-    # Agregasi jumlah penyewaan per jam
-    hourly_rentals = day_df.groupby("hr", as_index=False)["cnt"].mean()
-    
     # Buat figure
     fig2, ax2 = plt.subplots(figsize=(10, 5))
     
-    # Visualisasi dengan line chart
-    sns.lineplot(x=hourly_rentals["hr"], y=hourly_rentals["cnt"], marker="o", color="red")
+    sns.boxplot(x=day_df['hr'], y=day_df['cnt'], palette="coolwarm", ax=ax2)
     
     # Tambahkan judul dan label
-    plt.title("Pola Penyewaan Sepeda Berdasarkan Waktu dalam Sehari", fontsize=14, fontweight="bold")
-    plt.xlabel("Jam", fontsize=12)
-    plt.ylabel("Rata-rata Penyewaan", fontsize=12)
+    ax2.set_title("Distribusi Penyewaan Sepeda Berdasarkan Jam", fontsize=14, fontweight="bold")
+    ax2.set_xlabel("Jam", fontsize=12)
+    ax2.set_ylabel("Jumlah Penyewaan", fontsize=12)
     
     # Tambahkan grid horizontal
-    plt.grid(axis="y", linestyle="--", alpha=0.7)
+    ax2.grid(axis='y', linestyle='--', alpha=0.7)
     
     # Tampilkan plot
     st.pyplot(fig2)
 else:
-    # Jika tidak ada kolom 'hr'
-    st.write("Data tidak memiliki informasi jam ('hr'). Mungkin perlu memuat dataset terpisah.")
+    st.write("Data tidak memiliki informasi jam ('hr').")
 
-# 3. Pengaruh Cuaca terhadap Penyewaan Sepeda
-st.subheader("Pengaruh Cuaca terhadap Penyewaan Sepeda")
+# **3. Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca**
+st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca")
 
-# Mapping kondisi cuaca untuk memudahkan interpretasi
-weather_conditions = {1: 'Cerah', 2: 'Mendung', 3: 'Hujan'}
-
-# Buat salinan dataframe agar tidak mengubah dataframe awal
-weather_df = day_df.copy()
-
-# Konversi kode numerik ke deskripsi kondisi cuaca
-if 'weathersit' in weather_df.columns:
-    weather_df['weathersit'] = weather_df['weathersit'].map(weather_conditions)
-    
-    # Agregasi jumlah penyewaan berdasarkan kondisi cuaca
-    weather_rentals = weather_df.groupby("weathersit", as_index=False)["cnt"].mean()
-    
+# Cek apakah kolom 'weathersit' ada di dataset
+if 'weathersit' in day_df.columns:
     # Buat figure
     fig3, ax3 = plt.subplots(figsize=(8, 5))
     
-    # Visualisasi dengan bar chart
-    sns.barplot(x=weather_rentals["weathersit"], y=weather_rentals["cnt"], palette="coolwarm", dodge=False)
+    sns.violinplot(x=day_df['weathersit'], y=day_df['cnt'], palette="coolwarm", ax=ax3)
     
     # Tambahkan judul dan label
-    plt.title("Pengaruh Cuaca terhadap Penyewaan Sepeda", fontsize=14, fontweight="bold")
-    plt.xlabel("Kondisi Cuaca")
-    plt.ylabel("Rata-rata Penyewaan")
+    ax3.set_title("Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca", fontsize=14, fontweight="bold")
+    ax3.set_xlabel("Kondisi Cuaca", fontsize=12)
+    ax3.set_ylabel("Jumlah Penyewaan", fontsize=12)
     
     # Tambahkan grid horizontal
-    plt.grid(axis="y", linestyle="--", alpha=0.7)
-    
-    # Sembunyikan legend karena tidak diperlukan
-    plt.legend([], [], frameon=False)
+    ax3.grid(axis='y', linestyle='--', alpha=0.7)
     
     # Tampilkan plot
     st.pyplot(fig3)
+else:
+    st.write("Data tidak memiliki informasi cuaca ('weathersit').")
