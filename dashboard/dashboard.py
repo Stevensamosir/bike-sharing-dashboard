@@ -11,56 +11,66 @@ def load_data():
 
 day_df = load_data()
 
-# Set style biar mirip Matplotlib
+# Tampilkan kolom untuk debug
+st.write("Kolom tersedia:", day_df.columns.tolist())
+
+# Set style
 plt.style.use("ggplot")
 
-# Sidebar untuk filter interaktif
-st.sidebar.header("🔍 Filter Interaktif")
+# Title
+st.title("Dashboard Analisis Penyewaan Sepeda")
 
-# Opsi musim (season)
-season_options = {
+# ============================
+# 🔍 FITUR INTERAKTIF
+# ============================
+
+# Mapping season & weather (kalau datanya angka)
+season_map = {
     1: "Spring",
     2: "Summer",
     3: "Fall",
     4: "Winter"
 }
-selected_seasons = st.sidebar.multiselect(
-    "Pilih Musim (Season)", 
-    options=list(season_options.keys()), 
-    format_func=lambda x: season_options[x],
-    default=list(season_options.keys())
-)
-
-# Opsi cuaca (weathersit)
-weather_options = {
+weather_map = {
     1: "Clear",
     2: "Mist + Cloudy",
     3: "Light Snow/Rain",
     4: "Heavy Rain/Ice"
 }
-selected_weathers = st.sidebar.multiselect(
-    "Pilih Kondisi Cuaca", 
-    options=list(weather_options.keys()), 
-    format_func=lambda x: weather_options[x],
-    default=list(weather_options.keys())
-)
 
-# Filter data berdasarkan input user
-filtered_df = day_df[
-    (day_df['season'].isin(selected_seasons)) &
-    (day_df['weathersit'].isin(selected_weathers))
-]
+# Cek apakah kolomnya ada
+if 'season' in day_df.columns and 'weathersit' in day_df.columns:
+    # Buat kolom baru untuk label
+    day_df["season_label"] = day_df["season"].map(season_map)
+    day_df["weather_label"] = day_df["weathersit"].map(weather_map)
 
-# Title utama
-st.title("🚲 Dashboard Analisis Penyewaan Sepeda")
+    # Sidebar filter
+    st.sidebar.header("🔍 Filter Interaktif")
+    selected_seasons = st.sidebar.multiselect(
+        "Pilih Musim (Season)", options=day_df["season_label"].unique(), default=day_df["season_label"].unique()
+    )
+    selected_weathers = st.sidebar.multiselect(
+        "Pilih Kondisi Cuaca", options=day_df["weather_label"].unique(), default=day_df["weather_label"].unique()
+    )
+
+    # Filter dataset
+    filtered_df = day_df[
+        (day_df["season_label"].isin(selected_seasons)) &
+        (day_df["weather_label"].isin(selected_weathers))
+    ]
+else:
+    st.warning("Kolom 'season' atau 'weathersit' tidak ditemukan. Menampilkan semua data tanpa filter.")
+    filtered_df = day_df.copy()
+
+# ============================
+# 📊 Visualisasi
+# ============================
 
 # 1. Tren Penyewaan Sepeda per Hari
 st.subheader("Tren Penyewaan Sepeda per Hari")
 monthly_rentals = filtered_df.groupby("dteday", as_index=False)["cnt"].sum()
-
 fig1, ax1 = plt.subplots(figsize=(10, 5))
 sns.scatterplot(x=monthly_rentals['dteday'], y=monthly_rentals['cnt'], color='blue', marker='o', ax=ax1)
-
 ax1.set_title("Tren Penyewaan Sepeda per Hari", fontsize=14, fontweight="bold")
 ax1.set_xlabel("Tanggal", fontsize=12)
 ax1.set_ylabel("Jumlah Penyewaan", fontsize=12)
@@ -85,7 +95,7 @@ else:
 st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca")
 if 'weathersit' in filtered_df.columns:
     fig3, ax3 = plt.subplots(figsize=(8, 5))
-    sns.violinplot(x=filtered_df['weathersit'], y=filtered_df['cnt'], palette="coolwarm", ax=ax3)
+    sns.violinplot(x=filtered_df['weather_label'], y=filtered_df['cnt'], palette="coolwarm", ax=ax3)
     ax3.set_title("Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca", fontsize=14, fontweight="bold")
     ax3.set_xlabel("Kondisi Cuaca", fontsize=12)
     ax3.set_ylabel("Jumlah Penyewaan", fontsize=12)
