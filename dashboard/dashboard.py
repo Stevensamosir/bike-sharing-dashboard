@@ -11,7 +11,7 @@ def load_data():
 
 day_df = load_data()
 
-# Tampilkan kolom untuk debug
+# Tampilkan kolom (debug)
 st.write("Kolom tersedia:", day_df.columns.tolist())
 
 # Set style
@@ -21,16 +21,9 @@ plt.style.use("ggplot")
 st.title("Dashboard Analisis Penyewaan Sepeda")
 
 # ============================
-# 🔍 FITUR INTERAKTIF
+# 🔍 FILTER INTERAKTIF (Cuaca)
 # ============================
 
-# Mapping season & weather (kalau datanya angka)
-season_map = {
-    1: "Spring",
-    2: "Summer",
-    3: "Fall",
-    4: "Winter"
-}
 weather_map = {
     1: "Clear",
     2: "Mist + Cloudy",
@@ -38,28 +31,19 @@ weather_map = {
     4: "Heavy Rain/Ice"
 }
 
-# Cek apakah kolomnya ada
-if 'season' in day_df.columns and 'weathersit' in day_df.columns:
-    # Buat kolom baru untuk label
-    day_df["season_label"] = day_df["season"].map(season_map)
+if 'weathersit' in day_df.columns:
     day_df["weather_label"] = day_df["weathersit"].map(weather_map)
 
-    # Sidebar filter
     st.sidebar.header("🔍 Filter Interaktif")
-    selected_seasons = st.sidebar.multiselect(
-        "Pilih Musim (Season)", options=day_df["season_label"].unique(), default=day_df["season_label"].unique()
-    )
     selected_weathers = st.sidebar.multiselect(
-        "Pilih Kondisi Cuaca", options=day_df["weather_label"].unique(), default=day_df["weather_label"].unique()
+        "Pilih Kondisi Cuaca",
+        options=day_df["weather_label"].unique(),
+        default=day_df["weather_label"].unique()
     )
 
-    # Filter dataset
-    filtered_df = day_df[
-        (day_df["season_label"].isin(selected_seasons)) &
-        (day_df["weather_label"].isin(selected_weathers))
-    ]
+    filtered_df = day_df[day_df["weather_label"].isin(selected_weathers)]
 else:
-    st.warning("Kolom 'season' atau 'weathersit' tidak ditemukan. Menampilkan semua data tanpa filter.")
+    st.warning("Kolom 'weathersit' tidak ditemukan. Menampilkan semua data.")
     filtered_df = day_df.copy()
 
 # ============================
@@ -68,15 +52,16 @@ else:
 
 # 1. Tren Penyewaan Sepeda per Hari
 st.subheader("Tren Penyewaan Sepeda per Hari")
-monthly_rentals = filtered_df.groupby("dteday", as_index=False)["cnt"].sum()
-fig1, ax1 = plt.subplots(figsize=(10, 5))
-sns.scatterplot(x=monthly_rentals['dteday'], y=monthly_rentals['cnt'], color='blue', marker='o', ax=ax1)
-ax1.set_title("Tren Penyewaan Sepeda per Hari", fontsize=14, fontweight="bold")
-ax1.set_xlabel("Tanggal", fontsize=12)
-ax1.set_ylabel("Jumlah Penyewaan", fontsize=12)
-ax1.tick_params(axis='x', rotation=45)
-ax1.grid(True, linestyle="--", alpha=0.7)
-st.pyplot(fig1)
+if 'dteday' in filtered_df.columns and 'cnt' in filtered_df.columns:
+    daily_data = filtered_df.groupby("dteday", as_index=False)["cnt"].sum()
+    fig1, ax1 = plt.subplots(figsize=(10, 5))
+    sns.scatterplot(x=daily_data['dteday'], y=daily_data['cnt'], color='blue', marker='o', ax=ax1)
+    ax1.set_title("Tren Penyewaan Sepeda per Hari", fontsize=14, fontweight="bold")
+    ax1.set_xlabel("Tanggal", fontsize=12)
+    ax1.set_ylabel("Jumlah Penyewaan", fontsize=12)
+    ax1.tick_params(axis='x', rotation=45)
+    ax1.grid(True, linestyle="--", alpha=0.7)
+    st.pyplot(fig1)
 
 # 2. Distribusi Penyewaan Sepeda Berdasarkan Jam
 st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Jam")
