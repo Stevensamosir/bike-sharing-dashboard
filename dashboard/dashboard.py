@@ -53,7 +53,14 @@ else:
 # Lineplot untuk hari kerja
 fig, ax = plt.subplots(figsize=(12, 6))
 sns.lineplot(x='hr', y='cnt', hue='season', data=filtered_hour_df, palette='tab10')
-plt.title(f'Pola Penyewaan Sepeda Berdasarkan Jam ({selected_workingday} - Hari Kerja)' if selected_workingday != "Semua" else 'Pola Penyewaan Sepeda Berdasarkan Jam')
+
+# Fix for the syntax error - using format() instead of f-strings
+if selected_workingday != "Semua":
+    title = 'Pola Penyewaan Sepeda Berdasarkan Jam ({})'.format(selected_workingday)
+else:
+    title = 'Pola Penyewaan Sepeda Berdasarkan Jam'
+    
+plt.title(title)
 plt.xlabel('Jam')
 plt.ylabel('Jumlah Penyewaan')
 plt.legend(title='Musim', labels=['Musim Semi', 'Musim Panas', 'Musim Gugur', 'Musim Dingin'])
