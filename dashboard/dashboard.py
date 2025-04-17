@@ -1,90 +1,64 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import streamlit as st
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
-# Load data
-@st.cache_data
-def load_data():
-    df = pd.read_csv("main_data.csv")
-    return df
+# Load dataset
+day_df = pd.read_csv("../data/day.csv")
+hour_df = pd.read_csv("../data/hour.csv")
 
-day_df = load_data()
-
-# Tampilkan kolom (debug)
-st.write("Kolom tersedia:", day_df.columns.tolist())
-
-# Set style
-plt.style.use("ggplot")
-
-# Title
+# Streamlit App Title
 st.title("Dashboard Analisis Penyewaan Sepeda")
 
-# ============================
-# 🔍 FILTER INTERAKTIF (Cuaca)
-# ============================
+# Sidebar Filters
+st.sidebar.header("Filter Data")
+selected_weather = st.sidebar.multiselect("Pilih Kondisi Cuaca", day_df["weathersit"].unique(), default=day_df["weathersit"].unique())
+selected_workingday = st.sidebar.radio("Pilih Hari", ["Semua", "Akhir Pekan", "Hari Kerja"], index=0)
 
-weather_map = {
-    1: "Clear",
-    2: "Mist + Cloudy",
-    3: "Light Snow/Rain",
-    4: "Heavy Rain/Ice"
-}
-
-if 'weathersit' in day_df.columns:
-    day_df["weather_label"] = day_df["weathersit"].map(weather_map)
-
-    st.sidebar.header("🔍 Filter Interaktif")
-    selected_weathers = st.sidebar.multiselect(
-        "Pilih Kondisi Cuaca",
-        options=day_df["weather_label"].unique(),
-        default=day_df["weather_label"].unique()
-    )
-
-    filtered_df = day_df[day_df["weather_label"].isin(selected_weathers)]
+# Mapping Working Day Filter
+if selected_workingday == "Semua":
+    # Tampilkan semua hari kerja dan akhir pekan jika "Semua" dipilih
+    filtered_day_df = day_df[day_df["weathersit"].isin(selected_weather)]
 else:
-    st.warning("Kolom 'weathersit' tidak ditemukan. Menampilkan semua data.")
-    filtered_df = day_df.copy()
+    workingday_map = {"Hari Kerja": 1, "Akhir Pekan": 0}
+    filtered_day_df = day_df[(day_df["weathersit"].isin(selected_weather)) & (day_df["workingday"] == workingday_map[selected_workingday])]
 
-# ============================
-# 📊 Visualisasi
-# ============================
+# Visualization 1: Pengaruh Cuaca terhadap Penyewaan Sepeda
+st.subheader("Pengaruh Cuaca terhadap Penyewaan Sepeda")
+fig, ax = plt.subplots(figsize=(10, 5))
+sns.barplot(x='weathersit', y='cnt', hue='workingday', data=filtered_day_df, palette={0: 'red', 1: 'green'})
+plt.title('Pengaruh Cuaca terhadap Penyewaan Sepeda (Hari Kerja vs Akhir Pekan)')
+plt.xlabel('Kondisi Cuaca (1=Cerah, 2=Mendung, 3=Hujan)')
+plt.ylabel('Jumlah Penyewaan')
+legend_akhir_pekan = mlines.Line2D([], [], color='red', label='Akhir Pekan', linewidth=6)
+legend_hari_kerja = mlines.Line2D([], [], color='green', label='Hari Kerja', linewidth=6)
+plt.legend(handles=[legend_akhir_pekan, legend_hari_kerja], title='Hari Kerja', loc='upper right', frameon=False)
+st.pyplot(fig)
 
-# 1. Tren Penyewaan Sepeda per Hari
-st.subheader("Tren Penyewaan Sepeda per Hari")
-if 'dteday' in filtered_df.columns and 'cnt' in filtered_df.columns:
-    daily_data = filtered_df.groupby("dteday", as_index=False)["cnt"].sum()
-    fig1, ax1 = plt.subplots(figsize=(10, 5))
-    sns.scatterplot(x=daily_data['dteday'], y=daily_data['cnt'], color='blue', marker='o', ax=ax1)
-    ax1.set_title("Tren Penyewaan Sepeda per Hari", fontsize=14, fontweight="bold")
-    ax1.set_xlabel("Tanggal", fontsize=12)
-    ax1.set_ylabel("Jumlah Penyewaan", fontsize=12)
-    ax1.tick_params(axis='x', rotation=45)
-    ax1.grid(True, linestyle="--", alpha=0.7)
-    st.pyplot(fig1)
+# Conclusion 1
+st.markdown("### Conclusion Pertanyaan 1")
+st.write("Cuaca memiliki dampak yang cukup signifikan terhadap jumlah penyewaan sepeda. Pengguna lebih cenderung menyewa sepeda pada kondisi cuaca cerah atau mendung ringan. Pada kondisi hujan, jumlah penyewaan turun drastis, baik di hari kerja maupun akhir pekan.")
 
-# 2. Distribusi Penyewaan Sepeda Berdasarkan Jam
-st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Jam")
-if 'hr' in filtered_df.columns:
-    fig2, ax2 = plt.subplots(figsize=(10, 5))
-    sns.boxplot(x=filtered_df['hr'], y=filtered_df['cnt'], palette="coolwarm", ax=ax2)
-    ax2.set_title("Distribusi Penyewaan Sepeda Berdasarkan Jam", fontsize=14, fontweight="bold")
-    ax2.set_xlabel("Jam", fontsize=12)
-    ax2.set_ylabel("Jumlah Penyewaan", fontsize=12)
-    ax2.grid(axis='y', linestyle='--', alpha=0.7)
-    st.pyplot(fig2)
+# Visualization 2: Pola Penyewaan Sepeda Berdasarkan Jam
+st.subheader("Pola Penyewaan Sepeda Berdasarkan Jam")
+
+# Filter berdasarkan hari kerja dan akhir pekan
+if selected_workingday == "Semua":
+    filtered_hour_df = hour_df[hour_df['season'].isin(selected_weather)]
 else:
-    st.write("Data tidak memiliki informasi jam ('hr').")
+    workingday_map = {"Hari Kerja": 1, "Akhir Pekan": 0}
+    filtered_hour_df = hour_df[(hour_df['workingday'] == workingday_map[selected_workingday]) & (hour_df['season'].isin(selected_weather))]
 
-# 3. Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca
-st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca")
-if 'weathersit' in filtered_df.columns:
-    fig3, ax3 = plt.subplots(figsize=(8, 5))
-    sns.violinplot(x=filtered_df['weather_label'], y=filtered_df['cnt'], palette="coolwarm", ax=ax3)
-    ax3.set_title("Distribusi Penyewaan Sepeda Berdasarkan Kondisi Cuaca", fontsize=14, fontweight="bold")
-    ax3.set_xlabel("Kondisi Cuaca", fontsize=12)
-    ax3.set_ylabel("Jumlah Penyewaan", fontsize=12)
-    ax3.grid(axis='y', linestyle='--', alpha=0.7)
-    st.pyplot(fig3)
-else:
-    st.write("Data tidak memiliki informasi cuaca ('weathersit').")
+# Lineplot untuk hari kerja
+fig, ax = plt.subplots(figsize=(12, 6))
+sns.lineplot(x='hr', y='cnt', hue='season', data=filtered_hour_df, palette='tab10')
+plt.title(f'Pola Penyewaan Sepeda Berdasarkan Jam ({selected_workingday} - Hari Kerja)' if selected_workingday != "Semua" else 'Pola Penyewaan Sepeda Berdasarkan Jam')
+plt.xlabel('Jam')
+plt.ylabel('Jumlah Penyewaan')
+plt.legend(title='Musim', labels=['Musim Semi', 'Musim Panas', 'Musim Gugur', 'Musim Dingin'])
+st.pyplot(fig)
+
+# Conclusion 2
+st.markdown("### Conclusion Pertanyaan 2")
+st.write("Penyewaan sepeda pada hari kerja memiliki pola yang jelas, dengan puncak di jam sibuk pagi dan sore. Pada akhir pekan, jumlah penyewaan lebih merata sepanjang hari tanpa puncak yang signifikan. Musim panas dan gugur adalah musim dengan penyewaan tertinggi, sedangkan musim dingin memiliki penyewaan terendah. Waktu terbaik untuk menyewa sepeda pada hari kerja adalah pagi dan sore, sedangkan di akhir pekan lebih fleksibel sepanjang hari.")
