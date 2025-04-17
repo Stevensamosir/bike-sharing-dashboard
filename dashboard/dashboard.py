@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -7,7 +8,6 @@ import matplotlib.lines as mlines
 # ==========================
 # LOAD DATA
 # ==========================
-# Karena file ini di dalam folder "dashboard", kita ambil CSV dari ../data/
 day_df = pd.read_csv("../data/day.csv")
 hour_df = pd.read_csv("../data/hour.csv")
 
@@ -102,7 +102,7 @@ sns.lineplot(
 plt.title('Pola Penyewaan Sepeda per Jam')
 plt.xlabel('Jam (0-23)')
 plt.ylabel('Jumlah Penyewaan')
-plt.legend(title='Musim', labels=['Musim Semi', 'Musim Panas', 'Musim Gugur', 'Musim Dingin'])
+plt.legend(title='Musim', labels=['Musim Semi', 'Musim Panas', 'Musim Gugur', 'Musim Dingin'])
 st.pyplot(fig2)
 
 # ==========================
